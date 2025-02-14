@@ -1,0 +1,97 @@
+package com.example.santanderdevweek;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springdoc.core.models.GroupedOpenApi;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Info;
+import jakarta.persistence.*;
+import java.util.List;
+import java.util.Optional;
+
+@SpringBootApplication
+@OpenAPIDefinition(info = @Info(title = "Santander Dev Week API", version = "1.0", description = "API para gerenciamento de dados"))
+public class SantanderDevWeekApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(SantanderDevWeekApplication.class, args);
+    }
+}
+
+@RestController
+@RequestMapping("/api/usuarios")
+class UsuarioController {
+    @Autowired
+    private UsuarioService usuarioService;
+
+    @GetMapping
+    public List<Usuario> listarUsuarios() {
+        return usuarioService.listarTodos();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Usuario> buscarUsuario(@PathVariable Long id) {
+        return usuarioService.buscarPorId(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping
+    public Usuario criarUsuario(@RequestBody Usuario usuario) {
+        return usuarioService.salvar(usuario);
+    }
+}
+
+@Service
+class UsuarioService {
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    public List<Usuario> listarTodos() {
+        return usuarioRepository.findAll();
+    }
+
+    public Optional<Usuario> buscarPorId(Long id) {
+        return usuarioRepository.findById(id);
+    }
+
+    public Usuario salvar(Usuario usuario) {
+        return usuarioRepository.save(usuario);
+    }
+}
+
+@Entity
+class Usuario {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String nome;
+    private String email;
+
+    // Getters e Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getNome() { return nome; }
+    public void setNome(String nome) { this.nome = nome; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+}
+
+interface UsuarioRepository extends JpaRepository<Usuario, Long> {}
+
+@Configuration
+class SwaggerConfig {
+    @Bean
+    public GroupedOpenApi publicApi() {
+        return GroupedOpenApi.builder()
+                .group("public")
+                .pathsToMatch("/api/**")
+                .build();
+    }
+}
